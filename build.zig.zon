@@ -1,0 +1,11 @@
+.{
+    .name = .iotest,
+    .version = "0.0.0",
+    .minimum_zig_version = "0.15.2",
+    .fingerprint = 0x7c60bebd2bc1628f,
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
