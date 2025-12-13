@@ -1,14 +1,12 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
 
 pub const IOTest = struct {
     input: []const u8,
     output: []const u8,
 };
 
-pub fn parseIOTests(allocator: Allocator, s: []const u8) ![]IOTest {
-    var res: ArrayList(IOTest) = .empty;
+pub fn parseIOTests(allocator: std.mem.Allocator, s: []const u8) ![]IOTest {
+    var res: std.ArrayList(IOTest) = .empty;
     defer res.deinit(allocator);
 
     var block_iter = std.mem.splitSequence(u8, s, "===\n");

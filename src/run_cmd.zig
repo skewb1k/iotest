@@ -1,6 +1,4 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
 
 pub fn runCmd(
     allocator: std.mem.Allocator,
@@ -12,9 +10,9 @@ pub fn runCmd(
     child.stdout_behavior = .Pipe;
     child.stderr_behavior = .Pipe;
 
-    var out_buf: ArrayList(u8) = .empty;
+    var out_buf: std.ArrayList(u8) = .empty;
     defer out_buf.deinit(allocator);
-    var err_buf: ArrayList(u8) = .empty;
+    var err_buf: std.ArrayList(u8) = .empty;
     defer err_buf.deinit(allocator);
 
     try child.spawn();

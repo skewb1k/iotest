@@ -1,9 +1,7 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
 
-pub fn parseCmd(allocator: Allocator, cmd: []const u8) ![]const []const u8 {
-    var args: ArrayList([]const u8) = .empty;
+pub fn parseCmd(allocator: std.mem.Allocator, cmd: []const u8) ![]const []const u8 {
+    var args: std.ArrayList([]const u8) = .empty;
     defer args.deinit(allocator);
 
     var it = std.mem.tokenizeAny(u8, cmd, " \t\n");

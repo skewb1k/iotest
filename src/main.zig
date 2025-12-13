@@ -2,47 +2,46 @@ const std = @import("std");
 const iotest = @import("iotest");
 const parseCmd = @import("parse_cmd.zig").parseCmd;
 const runCmd = @import("run_cmd.zig").runCmd;
-const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
 
 pub fn main() !void {
     // TODO: consider using arena.
-    var gpa: std.heap.GeneralPurposeAllocator(.{}) = .init;
-    const allocator = gpa.allocator();
+    var gpa_instance: std.heap.GeneralPurposeAllocator(.{}) = .init;
+    const gpa = gpa_instance.allocator();
 
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
+    const args = try std.process.argsAlloc(gpa);
+    defer std.process.argsFree(gpa, args);
+
     if (args.len != 3) {
         std.process.fatal("Usage: iotest <path> <command>", .{});
     }
-    const file_path = args[1];
+    const tests_path = args[1];
     const cmd = args[2];
 
-    const content = std.fs.cwd().readFileAlloc(allocator, file_path, 16 * 1024 * 1024) catch |err| switch (err) {
-        error.FileNotFound => std.process.fatal("file not found: {s}", .{file_path}),
-        else => std.process.fatal("reading file {s}: {any}", .{ file_path, err }),
+    const tests_bytes = std.fs.cwd().readFileAlloc(gpa, tests_path, 16 * 1024 * 1024) catch |err| switch (err) {
+        error.FileNotFound => std.process.fatal("file not found: {s}", .{tests_path}),
+        else => std.process.fatal("reading file {s}: {any}", .{ tests_path, err }),
     };
-    defer allocator.free(content);
+    defer gpa.free(tests_bytes);
 
-    const tests = try iotest.parseIOTests(allocator, content);
-    defer allocator.free(tests);
+    const tests = try iotest.parseIOTests(gpa, tests_bytes);
+    defer gpa.free(tests);
 
-    const argv = try parseCmd(allocator, cmd);
+    const argv = try parseCmd(gpa, cmd);
 
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
+    var out_buf: [1024]u8 = undefined;
+    var out_w = std.fs.File.stdout().writer(&out_buf);
+    const out = &out_w.interface;
 
     var failed: bool = false;
     for (tests, 1..) |t, t_num| {
-        const result = runCmd(allocator, argv, t.input) catch |err| switch (err) {
+        const result = runCmd(gpa, argv, t.input) catch |err| switch (err) {
             error.FileNotFound => std.process.fatal("{s}: no such file or directory", .{cmd}),
             else => std.process.fatal("running {s}: {any}", .{ cmd, err }),
         };
         const got = result.stdout;
         if (!std.mem.eql(u8, got, t.output)) {
             failed = true;
-            try printFailedTest(stdout, t_num, t, got);
+            try printFailedTest(out, t_num, t, got);
         }
     }
     if (failed) {
@@ -50,7 +49,7 @@ pub fn main() !void {
     }
 }
 
-pub fn printFailedTest(
+fn printFailedTest(
     w: *std.Io.Writer,
     t_num: usize,
     t: iotest.IOTest,
