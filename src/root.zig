@@ -11,9 +11,9 @@ pub fn parseIOTests(allocator: Allocator, s: []const u8) ![]IOTest {
     var res: ArrayList(IOTest) = .empty;
     defer res.deinit(allocator);
 
-    var block_iter = std.mem.splitSequence(u8, s, "\n===\n");
+    var block_iter = std.mem.splitSequence(u8, s, "===\n");
     while (block_iter.next()) |block| {
-        var io_iter = std.mem.splitSequence(u8, block, "\n---\n");
+        var io_iter = std.mem.splitSequence(u8, block, "---\n");
         const input = io_iter.next() orelse return error.InvalidFormat;
         const output = io_iter.next() orelse return error.InvalidFormat;
         try res.append(allocator, .{
@@ -44,21 +44,23 @@ fn expectEqualIOTests(expected: []const IOTest, actual: []const IOTest) !void {
 
 test parseIOTests {
     try testParseIOTests(&[_]IOTest{
-        .{ .input = "", .output = "" },
+        .{ .input = "\n", .output = "\n" },
     },
         \\
         \\---
         \\
+        \\
     );
     try testParseIOTests(&[_]IOTest{
-        .{ .input = "input1", .output = "output1" },
+        .{ .input = "input1\n", .output = "output1\n" },
     },
         \\input1
         \\---
         \\output1
+        \\
     );
     try testParseIOTests(&[_]IOTest{
-        .{ .input = "line1\n\nline2", .output = "lline1\nlline2\n" },
+        .{ .input = "line1\n\nline2\n", .output = "lline1\nlline2\n" },
     },
         \\line1
         \\
@@ -69,9 +71,9 @@ test parseIOTests {
         \\
     );
     try testParseIOTests(&[_]IOTest{
-        .{ .input = "input1", .output = "output1" },
-        .{ .input = "input2", .output = "output2" },
-        .{ .input = "input3", .output = "output3" },
+        .{ .input = "input1\n", .output = "output1\n" },
+        .{ .input = "input2\n", .output = "output2\n" },
+        .{ .input = "input3\n", .output = "output3\n" },
     },
         \\input1
         \\---
@@ -84,5 +86,6 @@ test parseIOTests {
         \\input3
         \\---
         \\output3
+        \\
     );
 }
