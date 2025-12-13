@@ -1,5 +1,7 @@
 const std = @import("std");
 
+/// Runs a child process with the given arguments, sends the provided input to
+/// its stdin, and captures its stdout, stderr and termination status.
 pub fn runCmd(
     allocator: std.mem.Allocator,
     argv: []const []const u8,

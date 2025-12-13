@@ -1,10 +1,17 @@
 const std = @import("std");
 
+/// Represents a single input/output test case.
 pub const IOTest = struct {
+    /// Input data to be fed to the program.
     input: []const u8,
+    /// Expected output data from the program.
     output: []const u8,
 };
 
+/// Parses a string containing multiple IO test blocks into an owned slice of `IOTest`.
+///
+/// Each block is separated by `"===\n"` and contains an input/output pair
+/// separated by `"---\n"`. Returns `error.InvalidFormat` if the input is incorrect.
 pub fn parseIOTests(allocator: std.mem.Allocator, s: []const u8) ![]IOTest {
     var res: std.ArrayList(IOTest) = .empty;
     defer res.deinit(allocator);

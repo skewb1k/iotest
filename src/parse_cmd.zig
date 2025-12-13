@@ -1,5 +1,6 @@
 const std = @import("std");
 
+/// Splits a command string into arguments, returning an owned slice of strings.
 pub fn parseCmd(allocator: std.mem.Allocator, cmd: []const u8) ![]const []const u8 {
     var args: std.ArrayList([]const u8) = .empty;
     defer args.deinit(allocator);
