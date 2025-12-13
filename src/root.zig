@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
-const IOTest = struct {
+pub const IOTest = struct {
     input: []const u8,
     output: []const u8,
 };
