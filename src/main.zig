@@ -6,7 +6,8 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    // TODO: consider using arena.
+    var gpa: std.heap.GeneralPurposeAllocator(.{}) = .init;
     const allocator = gpa.allocator();
 
     const args = try std.process.argsAlloc(allocator);
@@ -38,30 +39,28 @@ pub fn main() !void {
             error.FileNotFound => std.process.fatal("{s}: no such file or directory", .{cmd}),
             else => std.process.fatal("running {s}: {any}", .{ cmd, err }),
         };
-
-        failed |= try printTestResult(stdout, t_num, t, result);
+        const got = result.stdout;
+        if (!std.mem.eql(u8, got, t.output)) {
+            failed = true;
+            try printFailedTest(stdout, t_num, t, got);
+        }
     }
     if (failed) {
         std.process.exit(1);
     }
 }
 
-pub fn printTestResult(
+pub fn printFailedTest(
     w: *std.Io.Writer,
     t_num: usize,
     t: iotest.IOTest,
-    result: std.process.Child.RunResult,
-) !bool {
-    const got = result.stdout;
-    if (!std.mem.eql(u8, got, t.output)) {
-        try w.print("=== Test {d} failed ===\n", .{t_num});
-        try w.print("Input:\n{s}", .{t.input});
-        try w.print("Expected:\n{s}", .{t.output});
-        try w.print("Got:\n{s}", .{got});
-        try w.flush();
-        return true;
-    }
-    return false;
+    got: []const u8,
+) !void {
+    try w.print("=== Test {d} failed ===\n", .{t_num});
+    try w.print("Input:\n{s}", .{t.input});
+    try w.print("Expected:\n{s}", .{t.output});
+    try w.print("Got:\n{s}", .{got});
+    try w.flush();
 }
 
 test {
