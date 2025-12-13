@@ -13,7 +13,7 @@ pub fn parseCmd(allocator: std.mem.Allocator, cmd: []const u8) ![]const []const 
     return args.toOwnedSlice(allocator);
 }
 
-test parseCmd {
+test "parseCmd" {
     {
         const cmd = try parseCmd(std.testing.allocator, "");
         defer std.testing.allocator.free(cmd);

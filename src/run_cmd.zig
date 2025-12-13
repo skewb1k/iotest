@@ -39,7 +39,7 @@ pub fn runCmd(
     };
 }
 
-test runCmd {
+test "runCmd" {
     const argv = &[_][]const u8{"cat"};
     const input = "This is a test.\n";
 

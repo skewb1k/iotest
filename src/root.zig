@@ -47,7 +47,13 @@ fn expectEqualIOTests(expected: []const IOTest, actual: []const IOTest) !void {
     }
 }
 
-test parseIOTests {
+test "parseIOTests" {
+    try testParseIOTests(&[_]IOTest{
+        .{ .input = "", .output = "" },
+    },
+        \\---
+        \\
+    );
     try testParseIOTests(&[_]IOTest{
         .{ .input = "\n", .output = "\n" },
     },
