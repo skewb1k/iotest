@@ -17,7 +17,7 @@ pub fn main() !void {
     const tests_path = args[1];
     const cmd = args[2];
 
-    const tests_bytes = std.fs.cwd().readFileAlloc(gpa, tests_path, 16 * 1024 * 1024) catch |err| switch (err) {
+    const tests_bytes = std.fs.cwd().readFileAlloc(gpa, tests_path, 1024 * std.heap.page_size_min) catch |err| switch (err) {
         error.FileNotFound => fatal("file not found: {s}", .{tests_path}),
         else => fatal("error reading file {s}: {any}", .{ tests_path, err }),
     };
@@ -28,7 +28,7 @@ pub fn main() !void {
 
     const argv = try parseCmd(gpa, cmd);
 
-    var out_buf: [1024]u8 = undefined;
+    var out_buf: [std.heap.page_size_min]u8 = undefined;
     var out_w = std.fs.File.stdout().writer(&out_buf);
     const out = &out_w.interface;
 

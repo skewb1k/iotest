@@ -31,7 +31,7 @@ pub fn runCmd(
         try stdin.writeAll(input);
     }
 
-    try child.collectOutput(allocator, &out_buf, &err_buf, 16 * 1024 * 1024);
+    try child.collectOutput(allocator, &out_buf, &err_buf, 1024 * std.heap.page_size_min);
     return .{
         .stdout = try out_buf.toOwnedSlice(allocator),
         .stderr = try err_buf.toOwnedSlice(allocator),
