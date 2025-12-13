@@ -12,14 +12,14 @@ pub fn main() !void {
     defer std.process.argsFree(gpa, args);
 
     if (args.len != 3) {
-        std.process.fatal("Usage: iotest <path> <command>", .{});
+        fatalUsage("expected 2 arguments, found {d}", .{args.len - 1});
     }
     const tests_path = args[1];
     const cmd = args[2];
 
     const tests_bytes = std.fs.cwd().readFileAlloc(gpa, tests_path, 16 * 1024 * 1024) catch |err| switch (err) {
-        error.FileNotFound => std.process.fatal("file not found: {s}", .{tests_path}),
-        else => std.process.fatal("reading file {s}: {any}", .{ tests_path, err }),
+        error.FileNotFound => fatal("file not found: {s}", .{tests_path}),
+        else => fatal("error reading file {s}: {any}", .{ tests_path, err }),
     };
     defer gpa.free(tests_bytes);
 
@@ -35,8 +35,8 @@ pub fn main() !void {
     var failed: bool = false;
     for (tests, 1..) |t, t_num| {
         const result = runCmd(gpa, argv, t.input) catch |err| switch (err) {
-            error.FileNotFound => std.process.fatal("{s}: no such file or directory", .{cmd}),
-            else => std.process.fatal("running {s}: {any}", .{ cmd, err }),
+            error.FileNotFound => fatal("failed to run '{s}': no such file or directory", .{cmd}),
+            else => fatal("error running {s}: {any}", .{ cmd, err }),
         };
         const got = result.stdout;
         if (!std.mem.eql(u8, got, t.output)) {
@@ -60,6 +60,15 @@ fn printFailedTest(
     try w.print("Expected:\n{s}", .{t.output});
     try w.print("Got:\n{s}", .{got});
     try w.flush();
+}
+
+fn fatal(comptime fmt: []const u8, args: anytype) noreturn {
+    std.debug.print("iotest: " ++ fmt ++ "\n", args);
+    std.process.exit(1);
+}
+
+fn fatalUsage(comptime fmt: []const u8, args: anytype) noreturn {
+    fatal(fmt ++ "\nusage: iotest <path> <command>", args);
 }
 
 test {
