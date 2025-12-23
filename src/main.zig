@@ -43,6 +43,11 @@ pub fn main() !void {
             failed = true;
             try printFailedTest(out, t_num, t, got);
         }
+        if (result.stderr.len > 0) {
+            failed = true;
+            try out.print("Unexpected stderr output:\n{s}", .{result.stderr});
+        }
+        try out.flush();
     }
     if (failed) {
         std.process.exit(1);
@@ -59,7 +64,6 @@ fn printFailedTest(
     try w.print("Input:\n{s}", .{t.input});
     try w.print("Expected:\n{s}", .{t.output});
     try w.print("Got:\n{s}", .{got});
-    try w.flush();
 }
 
 fn fatal(comptime fmt: []const u8, args: anytype) noreturn {
