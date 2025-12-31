@@ -12,12 +12,13 @@ pub fn main() !void {
     defer std.process.argsFree(gpa, args);
 
     if (args.len != 3) {
-        fatalUsage("expected 2 arguments, found {d}", .{args.len - 1});
+        fatalWithUsage("expected 2 arguments, found {d}", .{args.len - 1});
     }
     const tests_path = args[1];
     const cmd = args[2];
 
-    const tests_bytes = std.fs.cwd().readFileAlloc(gpa, tests_path, 1024 * std.heap.page_size_min) catch |err| switch (err) {
+    const cwd = std.fs.cwd();
+    const tests_bytes = cwd.readFileAlloc(gpa, tests_path, 1024 * std.heap.page_size_min) catch |err| switch (err) {
         error.FileNotFound => fatal("file not found: {s}", .{tests_path}),
         else => fatal("error reading file {s}: {any}", .{ tests_path, err }),
     };
@@ -28,11 +29,11 @@ pub fn main() !void {
 
     const argv = try parseCmd(gpa, cmd);
 
-    var out_buf: [std.heap.page_size_min]u8 = undefined;
-    var out_w = std.fs.File.stdout().writer(&out_buf);
-    const out = &out_w.interface;
+    var stdout_buffer: [std.heap.page_size_min]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
 
-    var failed: bool = false;
+    var failed = false;
     for (tests, 1..) |t, t_num| {
         const result = runCmd(gpa, argv, t.input) catch |err| switch (err) {
             error.FileNotFound => fatal("failed to run '{s}': no such file or directory", .{cmd}),
@@ -41,13 +42,13 @@ pub fn main() !void {
         const got = result.stdout;
         if (!std.mem.eql(u8, got, t.output)) {
             failed = true;
-            try printFailedTest(out, t_num, t, got);
+            try printFailedTest(stdout, t_num, t, got);
         }
         if (result.stderr.len > 0) {
             failed = true;
-            try out.print("Unexpected stderr output:\n{s}", .{result.stderr});
+            try stdout.print("Unexpected stderr output:\n{s}", .{result.stderr});
         }
-        try out.flush();
+        try stdout.flush();
     }
     if (failed) {
         std.process.exit(1);
@@ -66,13 +67,13 @@ fn printFailedTest(
     try w.print("Got:\n{s}", .{got});
 }
 
+fn fatalWithUsage(comptime fmt: []const u8, args: anytype) noreturn {
+    fatal(fmt ++ "\nusage: iotest <path> <command>", args);
+}
+
 fn fatal(comptime fmt: []const u8, args: anytype) noreturn {
     std.debug.print("iotest: " ++ fmt ++ "\n", args);
     std.process.exit(1);
-}
-
-fn fatalUsage(comptime fmt: []const u8, args: anytype) noreturn {
-    fatal(fmt ++ "\nusage: iotest <path> <command>", args);
 }
 
 test {

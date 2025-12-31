@@ -13,20 +13,20 @@ pub const IOTest = struct {
 /// Each block is separated by `"===\n"` and contains an input/output pair
 /// separated by `"---\n"`. Returns `error.InvalidFormat` if the input is incorrect.
 pub fn parseIOTests(allocator: std.mem.Allocator, s: []const u8) ![]IOTest {
-    var res: std.ArrayList(IOTest) = .empty;
-    defer res.deinit(allocator);
+    var tests: std.ArrayList(IOTest) = .empty;
+    defer tests.deinit(allocator);
 
     var block_iter = std.mem.splitSequence(u8, s, "===\n");
     while (block_iter.next()) |block| {
         var io_iter = std.mem.splitSequence(u8, block, "---\n");
         const input = io_iter.next() orelse return error.InvalidFormat;
         const output = io_iter.next() orelse return error.InvalidFormat;
-        try res.append(allocator, .{
+        try tests.append(allocator, .{
             .input = input,
             .output = output,
         });
     }
-    return res.toOwnedSlice(allocator);
+    return tests.toOwnedSlice(allocator);
 }
 
 fn testParseIOTests(expected: []const IOTest, input: []const u8) !void {
