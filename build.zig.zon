@@ -2,8 +2,9 @@
     .name = .iotest,
     .version = "0.0.0",
     .minimum_zig_version = "0.15.2",
-    .fingerprint = 0x7c60bebd2bc1628f,
+    .fingerprint = 0x7c60bebdd69716f4,
     .paths = .{
+        "LICENSE",
         "build.zig",
         "build.zig.zon",
         "src",
