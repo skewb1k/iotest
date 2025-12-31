@@ -8,6 +8,10 @@ pub fn main() !void {
     var gpa_instance: std.heap.GeneralPurposeAllocator(.{}) = .init;
     const gpa = gpa_instance.allocator();
 
+    var threaded: std.Io.Threaded = .init(gpa, .{});
+    defer threaded.deinit();
+    const io = threaded.io();
+
     const args = try std.process.argsAlloc(gpa);
     defer std.process.argsFree(gpa, args);
 
@@ -17,8 +21,8 @@ pub fn main() !void {
     const tests_path = args[1];
     const cmd = args[2];
 
-    const cwd = std.fs.cwd();
-    const tests_bytes = cwd.readFileAlloc(gpa, tests_path, 1024 * std.heap.page_size_min) catch |err| switch (err) {
+    const cwd: std.Io.Dir = .cwd();
+    const tests_bytes = cwd.readFileAlloc(io, tests_path, gpa, .unlimited) catch |err| switch (err) {
         error.FileNotFound => fatal("file not found: {s}", .{tests_path}),
         else => fatal("error reading file {s}: {any}", .{ tests_path, err }),
     };
@@ -30,12 +34,12 @@ pub fn main() !void {
     const argv = try parseCmd(gpa, cmd);
 
     var stdout_buffer: [std.heap.page_size_min]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    var stdout_writer = std.Io.File.stdout().writer(io, &stdout_buffer);
     const stdout = &stdout_writer.interface;
 
     var failed = false;
     for (tests, 1..) |t, t_num| {
-        const result = runCmd(gpa, argv, t.input) catch |err| switch (err) {
+        const result = runCmd(io, gpa, argv, t.input) catch |err| switch (err) {
             error.FileNotFound => fatal("failed to run '{s}': no such file or directory", .{cmd}),
             else => fatal("error running {s}: {any}", .{ cmd, err }),
         };
