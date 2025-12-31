@@ -3,13 +3,12 @@ const iotest = @import("iotest");
 const parseCmd = @import("parse_cmd.zig").parseCmd;
 const runCmd = @import("run_cmd.zig").runCmd;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     // TODO: consider using arena.
-    var gpa_instance: std.heap.GeneralPurposeAllocator(.{}) = .init;
-    const gpa = gpa_instance.allocator();
+    const gpa = init.gpa;
+    const io = init.io;
 
-    const args = try std.process.argsAlloc(gpa);
-    defer std.process.argsFree(gpa, args);
+    const args = try init.minimal.args.toSlice(init.arena.allocator());
 
     if (args.len != 3) {
         fatalWithUsage("expected 2 arguments, found {d}", .{args.len - 1});
@@ -17,8 +16,8 @@ pub fn main() !void {
     const tests_path = args[1];
     const cmd = args[2];
 
-    const cwd = std.fs.cwd();
-    const tests_bytes = cwd.readFileAlloc(gpa, tests_path, 1024 * std.heap.page_size_min) catch |err| switch (err) {
+    const cwd: std.Io.Dir = .cwd();
+    const tests_bytes = cwd.readFileAlloc(io, tests_path, gpa, .unlimited) catch |err| switch (err) {
         error.FileNotFound => fatal("file not found: {s}", .{tests_path}),
         else => fatal("error reading file {s}: {any}", .{ tests_path, err }),
     };
@@ -30,12 +29,12 @@ pub fn main() !void {
     const argv = try parseCmd(gpa, cmd);
 
     var stdout_buffer: [std.heap.page_size_min]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    var stdout_writer = std.Io.File.stdout().writer(io, &stdout_buffer);
     const stdout = &stdout_writer.interface;
 
     var failed = false;
     for (tests, 1..) |t, t_num| {
-        const result = runCmd(gpa, argv, t.input) catch |err| switch (err) {
+        const result = runCmd(io, gpa, argv, t.input) catch |err| switch (err) {
             error.FileNotFound => fatal("failed to run '{s}': no such file or directory", .{cmd}),
             else => fatal("error running {s}: {any}", .{ cmd, err }),
         };
